@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src wss://eaffb81d.ala.us-east-1.emqxsl.com:8084; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+  <title>Soil 7-in-1 Monitor</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3f6f1;
+      --surface: #ffffff;
+      --text: #18201b;
+      --muted: #69746c;
+      --border: #dce4dd;
+      --accent: #23824d;
+      --accent-soft: #e3f3e8;
+      --danger: #b42318;
+      --shadow: 0 12px 32px rgba(25, 45, 31, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top left, #e4f2e5 0, transparent 36rem), var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .page {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 56px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      margin: 0 0 7px;
+      font-size: clamp(1.75rem, 4vw, 2.65rem);
+      font-weight: 650;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle, .updated {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .connection {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 13px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+      white-space: nowrap;
+      box-shadow: var(--shadow);
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    .connection.connected .dot { background: var(--accent); }
+    .connection.error .dot { background: var(--danger); }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .metric {
+      min-height: 166px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .metric:first-child {
+      grid-column: span 2;
+      background: linear-gradient(145deg, var(--accent-soft), var(--surface));
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 0.88rem;
+      letter-spacing: 0.02em;
+    }
+
+    .metric-reading {
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+      margin-top: 22px;
+    }
+
+    .metric-value {
+      font-size: clamp(2rem, 5vw, 3.1rem);
+      font-weight: 650;
+      letter-spacing: -0.045em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-unit { color: var(--muted); }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .error-text { color: var(--danger); }
+
+    @media (max-width: 860px) {
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metric:first-child { grid-column: span 1; }
+    }
+
+    @media (max-width: 560px) {
+      .page { width: min(100% - 22px, 1120px); padding-top: 24px; }
+      header { align-items: flex-start; flex-direction: column; }
+      .metrics { grid-template-columns: 1fr; }
+      .metric { min-height: 145px; }
+      .footer { flex-direction: column; }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #101612;
+        --surface: #18211b;
+        --text: #edf5ef;
+        --muted: #a1aea5;
+        --border: #2e3b32;
+        --accent: #63d18c;
+        --accent-soft: #173624;
+        --danger: #ff8a80;
+        --shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
+      }
+
+      body { background: radial-gradient(circle at top left, #173322 0, transparent 36rem), var(--bg); }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div>
+        <h1>Soil 7-in-1 Monitor</h1>
+        <p class="subtitle">Pembacaan langsung dari sensor lahan</p>
+      </div>
+      <div id="connection" class="connection" role="status" aria-live="polite">
+        <span class="dot" aria-hidden="true"></span>
+        <span id="connectionText">Menghubungkan…</span>
+      </div>
+    </header>
+
+    <section class="metrics" aria-label="Hasil pengukuran tanah">
+      <article class="metric">
+        <span class="metric-label">Kelembaban</span>
+        <div class="metric-reading"><span class="metric-value" data-key="kelembaban">—</span><span class="metric-unit">%</span></div>
+      </article>
+      <article class="metric">
+        <span class="metric-label">Suhu</span>
+        <div class="metric-reading"><span class="metric-value" data-key="suhu">—</span><span class="metric-unit">°C</span></div>
+      </article>
+      <article class="metric">
+        <span class="metric-label">Konduktivitas</span>
+        <div class="metric-reading"><span class="metric-value" data-key="konduktivitas">—</span><span class="metric-unit">µS/cm</span></div>
+      </article>
+      <article class="metric">
+        <span class="metric-label">pH</span>
+        <div class="metric-reading"><span class="metric-value" data-key="ph">—</span></div>
+      </article>
+      <article class="metric">
+        <span class="metric-label">Nitrogen</span>
+        <div class="metric-reading"><span class="metric-value" data-key="nitrogen">—</span><span class="metric-unit">mg/kg</span></div>
+      </article>
+      <article class="metric">
+        <span class="metric-label">Fosfor</span>
+        <div class="metric-reading"><span class="metric-value" data-key="fosfor">—</span><span class="metric-unit">mg/kg</span></div>
+      </article>
+      <article class="metric">
+        <span class="metric-label">Kalium</span>
+        <div class="metric-reading"><span class="metric-value" data-key="kalium">—</span><span class="metric-unit">mg/kg</span></div>
+      </article>
+    </section>
+
+    <div class="footer">
+      <span id="updated" class="updated">Belum ada data pengukuran</span>
+      <span>Topik: <code>soil7/data</code></span>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.4/dist/mqtt.min.js"></script>
+  <script>
+    (() => {
+      const brokerUrl = 'wss://eaffb81d.ala.us-east-1.emqxsl.com:8084/mqtt';
+      const dataTopic = 'soil7/data';
+      const statusTopic = 'soil7/status';
+      const connection = document.getElementById('connection');
+      const connectionText = document.getElementById('connectionText');
+      const updated = document.getElementById('updated');
+      const fields = Object.fromEntries(
+        [...document.querySelectorAll('[data-key]')].map((element) => [element.dataset.key, element])
+      );
+
+      const setConnection = (state, text) => {
+        connection.classList.remove('connected', 'error');
+        if (state) connection.classList.add(state);
+        connectionText.textContent = text;
+      };
+
+      const client = mqtt.connect(brokerUrl, {
+        username: 'sensor',
+        password: '12qwaszx',
+        clientId: `soil7-web-${crypto.randomUUID().slice(0, 8)}`,
+        clean: true,
+        reconnectPeriod: 5000,
+        connectTimeout: 10000,
+        protocolVersion: 4
+      });
+
+      client.on('connect', () => {
+        setConnection('connected', 'MQTT terhubung');
+        client.subscribe([dataTopic, statusTopic], { qos: 0 }, (error) => {
+          if (error) setConnection('error', 'Subscribe gagal');
+        });
+      });
+
+      client.on('reconnect', () => setConnection('', 'Menghubungkan kembali…'));
+      client.on('offline', () => setConnection('error', 'MQTT offline'));
+      client.on('error', () => setConnection('error', 'Koneksi MQTT gagal'));
+
+      client.on('message', (topic, payload) => {
+        if (topic === statusTopic) {
+          const status = payload.toString();
+          setConnection(status === 'online' ? 'connected' : 'error', `Sensor ${status}`);
+          return;
+        }
+
+        if (topic !== dataTopic) return;
+
+        try {
+          const data = JSON.parse(payload.toString());
+          Object.entries(fields).forEach(([key, element]) => {
+            const value = data[key];
+            element.textContent = Number.isFinite(Number(value)) && value !== null
+              ? Number(value).toLocaleString('id-ID', { maximumFractionDigits: 1 })
+              : '—';
+          });
+          updated.textContent = `Diperbarui ${new Intl.DateTimeFormat('id-ID', {
+            dateStyle: 'medium',
+            timeStyle: 'medium'
+          }).format(new Date())}`;
+        } catch (error) {
+          updated.textContent = 'Payload MQTT tidak valid';
+          updated.classList.add('error-text');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
